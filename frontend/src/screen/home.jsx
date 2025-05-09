@@ -3,64 +3,109 @@ import { faPaperPlane } from "@fortawesome/free-solid-svg-icons";
 import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { UserGetActions, UserInputActions } from "../actions/userActions";
+import { Toast, ToastContainer } from "react-bootstrap";
 
 export const Home = () => {
   const [data, setData] = useState("");
-  const [holder, setHolder] = useState("");
+  const [chatHistory, setChatHistory] = useState([]);
+  const [showToast, setShowToast] = useState(true);
+  const [error, setError] = useState(false);
+  
   const dispatch = useDispatch();
-  const { message } = useSelector((state) => state.UserInput);
+  const { message, error: apiError } = useSelector((state) => state.UserInput);
 
   useEffect(() => {
     UserInputActions();
+    
+    const timeout = setTimeout(() => {
+      setShowToast(false);
+    }, 5000);
+    
+    return () => clearTimeout(timeout);
   }, [dispatch]);
+
+  useEffect(() => {
+    if (apiError) {
+      setError(true);
+      return;
+    }
+    
+    if (message && message !== "") {
+      setChatHistory(prevChat => [
+        ...prevChat,
+        { sender: "J3J3", content: message }
+      ]);
+    }
+  }, [message, apiError]);
 
   const submitButton = (e) => {
     e.preventDefault();
-    // This is done to structure the data as {data: contents} before sending it to the backend, matching the expected format.
+    if (!data.trim()) return;
+    
+    setChatHistory(prevChat => [
+      ...prevChat,
+      { sender: "User", content: data }
+    ]);
+    
     const formData = { data };
     dispatch(UserInputActions(formData));
     setData("");
-    // useState are async so they did not sync clear (lol lucky shot hehe?)
-    setHolder(data);
   };
 
   return (
     <div>
       <h1>j3j3-GPT</h1>
 
-      {/* CHAT CONVO */}
+      <ToastContainer position="top-end" className="p-3">
+        <Toast show={showToast} onClose={() => setShowToast(false)}>
+          <Toast.Header>
+            <strong className="me-auto">Notification</strong>
+          </Toast.Header>
+          <Toast.Body>This chat does not save conversations. All messages will be lost on refresh.</Toast.Body>
+        </Toast>
+      </ToastContainer>
+
+      {error && (
+        <div className="alert alert-danger" role="alert">
+          Something went wrong BRO!
+        </div>
+      )}
 
       <div className="container">
         <div className="row">
-          <div className="col">
-            {holder ? (
-              <div className="justify-content-end d-flex p-4">
-                <div className="bg-light text-dark p-2 rounded mt-2">
-                  {holder}
+          <div className="col chat-container" style={{ height: "70vh", overflowY: "auto", paddingBottom: "80px" }}>
+            {chatHistory.map((msg, index) => (
+              <div 
+                key={index} 
+                className={`d-flex ${msg.sender === "User" ? "justify-content-end" : "justify-content-start"} p-2`}
+              >
+                {msg.sender !== "User" && <p className="p-2">{msg.sender}: </p>}
+                <div className="bg-light text-dark p-2 rounded">
+                  {msg.content}
                 </div>
-                <p className="p-2">:User </p>
+                {msg.sender === "User" && <p className="p-2">:{msg.sender} </p>}
               </div>
-            ) : null}
-            {message ? (
-              <div className="justify-content-start d-flex">
-                <p className="p-2">J3J3: </p>
-                <div className="bg-light text-dark p-2 rounded">{message}</div>
-              </div>
-            ) : null}
+            ))}
           </div>
         </div>
 
-        {/* CHAT INPUTS */}
         <footer className="fixed-bottom mb-2">
           <div className="container">
             <div className="row">
-              <div className="col sm-2">
+              <div className="col-sm-12">
                 <form className="form-group">
                   <div className="d-flex">
                     <textarea
                       className="form-control bg-primary text-white"
                       onChange={(e) => setData(e.target.value)}
                       value={data}
+                      placeholder="Type your message..."
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' && !e.shiftKey) {
+                          e.preventDefault();
+                          submitButton(e);
+                        }
+                      }}
                     ></textarea>
                     <button
                       className="btn btn-primary text-white"
