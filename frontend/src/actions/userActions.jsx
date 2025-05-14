@@ -12,7 +12,7 @@ export const UserInputActions = (formData) => async (dispatch) => {
   try {
   
     dispatch({ type: USER_INPUT_REQUEST });
-    const response = await axios.post(`http://localhost:5000/ai`, formData);
+    const response = await axios.post(`https://j3j3pt.onrender.com/ai`, formData);
  
 
     if (response.data && response.data.success)
@@ -35,7 +35,7 @@ export const UserInputActions = (formData) => async (dispatch) => {
 export const UserGetActions = () => async (dispatch) => {
   try {
     dispatch({ type: USER_GET_REQUEST });
-    const response = await axios.get(`http://localhost:5000/ai`);
+    const response = await axios.get(`https://j3j3pt.onrender.com/ai`);
 
     if (response.data && response.data.success)
       return dispatch({
