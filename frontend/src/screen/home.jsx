@@ -43,7 +43,7 @@ export const Home = () => {
     }
   }, [message, apiError]);
 
-  // Scroll to bottom when chat history updates
+
   useEffect(() => {
     if (chatContainerRef.current) {
       chatContainerRef.current.scrollTop =
@@ -80,12 +80,6 @@ export const Home = () => {
           </Toast.Body>
         </Toast>
       </ToastContainer>
-
-      {/* {error && (
-        <div className="alert alert-danger" role="alert">
-          Something went wrong BRO!
-        </div>
-      )} */}
 
       <div className="container">
         <div className="row">
