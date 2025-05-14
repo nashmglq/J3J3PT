@@ -1,6 +1,6 @@
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faPaperPlane } from "@fortawesome/free-solid-svg-icons";
-import { useEffect, useState } from "react";
+import { faPaperPlane, faSpinner } from "@fortawesome/free-solid-svg-icons";
+import { useEffect, useState, useRef } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { UserGetActions, UserInputActions } from "../actions/userActions";
 import { Toast, ToastContainer } from "react-bootstrap";
@@ -10,17 +10,22 @@ export const Home = () => {
   const [chatHistory, setChatHistory] = useState([]);
   const [showToast, setShowToast] = useState(true);
   const [error, setError] = useState(false);
-  
+  const chatContainerRef = useRef(null);
+
   const dispatch = useDispatch();
-  const { message, error: apiError } = useSelector((state) => state.UserInput);
+  const {
+    loading,
+    message,
+    error: apiError,
+  } = useSelector((state) => state.UserInput);
 
   useEffect(() => {
     UserInputActions();
-    
+
     const timeout = setTimeout(() => {
       setShowToast(false);
     }, 5000);
-    
+
     return () => clearTimeout(timeout);
   }, [dispatch]);
 
@@ -29,24 +34,32 @@ export const Home = () => {
       setError(true);
       return;
     }
-    
+
     if (message && message !== "") {
-      setChatHistory(prevChat => [
+      setChatHistory((prevChat) => [
         ...prevChat,
-        { sender: "J3J3", content: message }
+        { sender: "J3J3", content: message },
       ]);
     }
   }, [message, apiError]);
 
+  // Scroll to bottom when chat history updates
+  useEffect(() => {
+    if (chatContainerRef.current) {
+      chatContainerRef.current.scrollTop =
+        chatContainerRef.current.scrollHeight;
+    }
+  }, [chatHistory, loading]);
+
   const submitButton = (e) => {
     e.preventDefault();
     if (!data.trim()) return;
-    
-    setChatHistory(prevChat => [
+
+    setChatHistory((prevChat) => [
       ...prevChat,
-      { sender: "User", content: data }
+      { sender: "User", content: data },
     ]);
-    
+
     const formData = { data };
     dispatch(UserInputActions(formData));
     setData("");
@@ -61,23 +74,34 @@ export const Home = () => {
           <Toast.Header>
             <strong className="me-auto">Notification</strong>
           </Toast.Header>
-          <Toast.Body>This chat does not save conversations. All messages will be lost on refresh.</Toast.Body>
+          <Toast.Body>
+            This chat does not save conversations. All messages will be lost on
+            refresh.
+          </Toast.Body>
         </Toast>
       </ToastContainer>
 
-      {error && (
+      {/* {error && (
         <div className="alert alert-danger" role="alert">
           Something went wrong BRO!
         </div>
-      )}
+      )} */}
 
       <div className="container">
         <div className="row">
-          <div className="col chat-container" style={{ height: "70vh", overflowY: "auto", paddingBottom: "80px" }}>
+          <div
+            className="col chat-container"
+            style={{ height: "70vh", overflowY: "auto", paddingBottom: "80px" }}
+            ref={chatContainerRef}
+          >
             {chatHistory.map((msg, index) => (
-              <div 
-                key={index} 
-                className={`d-flex ${msg.sender === "User" ? "justify-content-end" : "justify-content-start"} p-2`}
+              <div
+                key={index}
+                className={`d-flex ${
+                  msg.sender === "User"
+                    ? "justify-content-end"
+                    : "justify-content-start"
+                } p-2`}
               >
                 {msg.sender !== "User" && <p className="p-2">{msg.sender}: </p>}
                 <div className="bg-light text-dark p-2 rounded">
@@ -86,6 +110,30 @@ export const Home = () => {
                 {msg.sender === "User" && <p className="p-2">:{msg.sender} </p>}
               </div>
             ))}
+
+            {loading ? (
+              <div className="d-flex justify-content-start p-2">
+                <p className="p-2">J3J3:</p>
+                <div
+                  className="bg-light text-dark p-3 rounded d-flex align-items-center"
+                  aria-live="polite"
+                >
+                  <FontAwesomeIcon icon={faSpinner} spin />
+
+                </div>
+              </div>
+            ) : error ? (
+              <div className="d-flex justify-content-start p-2">
+                <p className="p-2">J3J3:</p>
+                <div
+                  className="bg-light text-dark p-3 rounded d-flex align-items-center text-red-400"
+                  aria-live="polite"
+                >
+       
+                  <span className="text-danger">Something went wrong...</span>
+                </div>
+              </div>
+            ) : null}
           </div>
         </div>
 
@@ -101,17 +149,22 @@ export const Home = () => {
                       value={data}
                       placeholder="Type your message..."
                       onKeyDown={(e) => {
-                        if (e.key === 'Enter' && !e.shiftKey) {
+                        if (e.key === "Enter" && !e.shiftKey) {
                           e.preventDefault();
                           submitButton(e);
                         }
                       }}
+                      disabled={loading}
                     ></textarea>
                     <button
                       className="btn btn-primary text-white"
                       onClick={submitButton}
+                      disabled={loading}
                     >
-                      <FontAwesomeIcon icon={faPaperPlane} />
+                      <FontAwesomeIcon
+                        icon={loading ? faSpinner : faPaperPlane}
+                        spin={loading}
+                      />
                     </button>
                   </div>
                 </form>
